@@ -117,7 +117,7 @@
   become: true
   command: >
     nohup bash -c "
-    {% for interface in interfaces_cleanup_interfaces if interfaces_cleanup_orphan | bool %}
+    {% for interface in (interfaces_cleanup_interfaces | default([])) if interfaces_cleanup_orphan | default(false) | bool %}
     ip link set {{ interface }} down || true;
     ip link delete {{ interface }} || true;
     {% endfor %}
@@ -170,19 +170,19 @@
     exit $returncode"
   vars:
     ether_vlan_interfaces_changed: >
-      {{ ether_interfaces_changed | select('match', vlan_interface_regex) | list}}
+      {{ ether_interfaces_changed | default([]) | select('match', vlan_interface_regex) | list}}
     ether_non_vlan_interfaces_changed: >
-      {{ ether_interfaces_changed | reject('match', vlan_interface_regex) | list }}
+      {{ ether_interfaces_changed | default([]) | reject('match', vlan_interface_regex) | list }}
     bridge_port_vlan_interfaces_changed: >
-      {{ bridge_port_interfaces_changed | select('match', vlan_interface_regex) | list}}
+      {{ bridge_port_interfaces_changed | default([]) | select('match', vlan_interface_regex) | list}}
     bridge_port_non_vlan_interfaces_changed: >
-      {{ bridge_port_interfaces_changed | reject('match', vlan_interface_regex) | list }}
+      {{ bridge_port_interfaces_changed | default([]) | reject('match', vlan_interface_regex) | list }}
     all_interfaces_changed: >
         {{ ether_non_vlan_interfaces_changed +
-           bridge_interfaces_changed +
-           bond_master_interfaces_changed +
-           bridge_port_interfaces_changed +
-           bond_slave_interfaces_changed +
+           (bridge_interfaces_changed | default([])) +
+           (bond_master_interfaces_changed | default([])) +
+           (bridge_port_interfaces_changed | default([])) +
+           (bond_slave_interfaces_changed | default([])) +
            ether_vlan_interfaces_changed }}
   listen: Bounce network devices
   when: interfaces_use_networkmanager
@@ -216,7 +216,7 @@
   command: >
     nohup bash -c "
     returncode=0
-    {% for interface in interfaces_cleanup_interfaces if interfaces_cleanup_orphan | bool %}
+    {% for interface in (interfaces_cleanup_interfaces | default([])) if interfaces_cleanup_orphan | default(false) | bool %}
     ip link set {{ interface }} down || true;
     ip link delete {{ interface }} || true;
     {% endfor %}
@@ -237,32 +237,32 @@
     exit $returncode"
   vars:
     ether_vlan_interfaces_changed: >
-      {{ ether_interfaces_changed | select('match', vlan_interface_regex) | list}}
+      {{ ether_interfaces_changed | default([]) | select('match', vlan_interface_regex) | list}}
     ether_non_vlan_interfaces_changed: >
-      {{ ether_interfaces_changed | reject('match', vlan_interface_regex) | list }}
+      {{ ether_interfaces_changed | default([]) | reject('match', vlan_interface_regex) | list }}
     bridge_port_vlan_interfaces_changed: >
-      {{ bridge_port_interfaces_changed | select('match', vlan_interface_regex) | list}}
+      {{ bridge_port_interfaces_changed | default([]) | select('match', vlan_interface_regex) | list}}
     bridge_port_non_vlan_interfaces_changed: >
-      {{ bridge_port_interfaces_changed | reject('match', vlan_interface_regex) | list }}
+      {{ bridge_port_interfaces_changed | default([]) | reject('match', vlan_interface_regex) | list }}
     all_interfaces_changed_map:
       Debian: >
         {{ ether_non_vlan_interfaces_changed +
-           bond_slave_interfaces_changed +
-           bond_master_interfaces_changed +
+           (bond_slave_interfaces_changed | default([])) +
+           (bond_master_interfaces_changed | default([])) +
            bridge_port_non_vlan_interfaces_changed +
-           bridge_interfaces_changed +
+           (bridge_interfaces_changed | default([])) +
            bridge_port_vlan_interfaces_changed +
            ether_vlan_interfaces_changed }}
       # On RedHat, bounce any changed bond master interfaces for a second time.
       # The reason for this is unclear.
       RedHat: >
         {{ ether_non_vlan_interfaces_changed +
-           bridge_interfaces_changed +
-           bond_master_interfaces_changed +
-           bridge_port_interfaces_changed +
-           bond_slave_interfaces_changed +
+           (bridge_interfaces_changed | default([])) +
+           (bond_master_interfaces_changed | default([])) +
+           (bridge_port_interfaces_changed | default([])) +
+           (bond_slave_interfaces_changed | default([])) +
            ether_vlan_interfaces_changed +
-           bond_master_interfaces_changed }}
+           (bond_master_interfaces_changed | default([])) }}
     all_interfaces_changed: "{{ all_interfaces_changed_map[ansible_facts.os_family] }}"
   when: not interfaces_use_networkmanager
   notify:
