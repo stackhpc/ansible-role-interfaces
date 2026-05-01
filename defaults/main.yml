@@ -19,3 +19,6 @@ interfaces_setup_gather_subset: "{{ omit }}"
 interfaces_bond_setup_slaves: true
 interfaces_merge: false
 interfaces_bounce_ignore_errors: false
+interfaces_cleanup_orphan: false
+interfaces_cleanup_exclude: []
+interfaces_cleanup_interfaces: []

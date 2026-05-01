@@ -117,6 +117,11 @@
   become: true
   command: >
     nohup bash -c "
+    {% for interface in interfaces_cleanup_interfaces if interfaces_cleanup_orphan | bool %}
+    ip link set {{ interface }} down || true;
+    ip link delete {{ interface }} || true;
+    {% endfor %}
+
     nmcli connection reload;
 
     returncode=0
@@ -211,6 +216,11 @@
   command: >
     nohup bash -c "
     returncode=0
+    {% for interface in interfaces_cleanup_interfaces if interfaces_cleanup_orphan | bool %}
+    ip link set {{ interface }} down || true;
+    ip link delete {{ interface }} || true;
+    {% endfor %}
+
     {% for interface in all_interfaces_changed | reverse %}
     ifdown {% if ansible_facts.os_family == 'Debian' %}--allow auto {% endif %}{{ interface }};
     {% endfor %}

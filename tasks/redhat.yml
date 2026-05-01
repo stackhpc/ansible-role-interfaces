@@ -98,5 +98,87 @@
     - "{{ interfaces_bond_interfaces | map(attribute='device') | list }}"
     - "{{ interfaces_bond_interfaces | map(attribute='bond_slaves') | flatten | list }}"
 
+- block:
+    - name: RedHat | collect previous NetworkManager and network-scripts files
+      become: true
+      find:
+        paths: "{{ item.path }}"
+        patterns: "{{ item.patterns }}"
+        file_type: file
+      loop:
+        - path: /etc/sysconfig/network-scripts
+          patterns:
+            - ifcfg-*
+        - path: /etc/NetworkManager/system-connections
+          patterns:
+            - "*.nmconnection"
+      register: interfaces_cleanup_files
+
+    - name: RedHat | build orphan interface cleanup list
+      set_fact:
+        interfaces_cleanup_interfaces: >-
+          {{ (interfaces_cleanup_old
+              | difference(interfaces_cleanup_new)
+              | difference(interfaces_cleanup_exclude)
+              | unique
+              | list) }}
+      vars:
+        interfaces_cleanup_old: >-
+          {{ ((interfaces_cleanup_files.results[0].files | default([])
+               | map(attribute='path')
+               | map('basename')
+               | map('regex_replace', '^ifcfg-', '')
+               | list)
+              +
+              (interfaces_cleanup_files.results[1].files | default([])
+               | map(attribute='path')
+               | map('basename')
+               | map('regex_replace', '^cloud-init-', '')
+               | map('regex_replace', '\\.nmconnection$', '')
+               | list))
+             | unique
+             | list }}
+        interfaces_cleanup_new: >-
+          {{ ((interfaces_ether_interfaces | map(attribute='device') | list)
+              +
+              (interfaces_bridge_interfaces | map(attribute='device') | list)
+              +
+              (interfaces_bridge_interfaces | map(attribute='ports') | flatten | list)
+              +
+              (interfaces_bond_interfaces | map(attribute='device') | list)
+              +
+              (interfaces_bond_interfaces | map(attribute='bond_slaves') | flatten | list))
+             | unique
+             | list }}
+  when: interfaces_cleanup_orphan | bool
+
+- block:
+    - name: RedHat | remove orphan network-scripts configuration
+      file:
+        path: "/etc/sysconfig/network-scripts/ifcfg-{{ item }}"
+        state: absent
+      loop: "{{ interfaces_cleanup_interfaces }}"
+
+    - name: RedHat | remove orphan NetworkManager default configuration
+      file:
+        path: "/etc/NetworkManager/system-connections/{{ item }}.nmconnection"
+        state: absent
+      loop: "{{ interfaces_cleanup_interfaces }}"
+
+    - name: RedHat | remove orphan NetworkManager cloud-init configuration
+      file:
+        path: "/etc/NetworkManager/system-connections/cloud-init-{{ item }}.nmconnection"
+        state: absent
+      loop: "{{ interfaces_cleanup_interfaces }}"
+
+    - name: RedHat | schedule orphan interface link cleanup
+      command: /bin/true
+      changed_when: true
+      notify: Bounce network devices
+  become: true
+  when:
+    - interfaces_cleanup_orphan | bool
+    - interfaces_cleanup_interfaces | length > 0
+
 - name: Flush Handlers
   meta: flush_handlers
