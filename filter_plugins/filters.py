@@ -101,6 +101,11 @@ def _interface_check(context, interface, interface_type=None):
         elif fact_address and fact_address not in interface.get('allowed_addresses', []):
             return _fail("Interface %s has an IPv4 address but none was "
                          "requested" % device)
+
+        if interface.get("extra_addresses"):
+            for address in interface["extra_addresses"]:
+                if address["addr"] != fact_address and address["addr"] not in secondaries:
+                    return _fail("Interface %s is missing IPv4 address %s" % (device, address["addr"]))
     
     # Static IPv6 address
     if interface.get("bootproto") == "static" and interface.get("ip6"):
