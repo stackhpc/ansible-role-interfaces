@@ -10,9 +10,19 @@ HWADDR={{ item.hwaddr }}
 BOOTPROTO=none
 {% if item.address is defined %}
 IPADDR={{ item.address }}
+{%   if item.extra_addresses is defined %}
+{%   for address in item.extra_addresses %}
+IPADDR{{ loop.index }}={{ address["ip"] }}
+{%   endfor %}
+{%   endif %}
 {% endif %}
 {% if item.netmask is defined %}
 NETMASK={{ item.netmask }}
+{%   if item.extra_addresses is defined %}
+{%   for address in item.extra_addresses %}
+NETMASK{{ loop.index }}={{ address["netmask"] }}
+{%   endfor %}
+{%   endif %}
 {% endif %}
 {% if item.gateway is defined %}
 GATEWAY={{ item.gateway }}

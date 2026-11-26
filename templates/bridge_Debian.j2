@@ -91,3 +91,10 @@ up ip rule add {{ rule_str }}
 down ip rule del {{ rule_str }}
 {% endfor %}
 {% endif %}
+
+{% if item.extra_addresses is defined %}
+{% for address in item.extra_addresses %}
+up ip addr add {{ address["ip"] }}/{{ address["netmask"] }} dev {{ item.device }}
+down ip addr del {{ address["ip"] }}/{{ address["netmask"] }} dev {{ item.device }}
+{% endfor %}
+{% endif %}
