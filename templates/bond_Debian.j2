@@ -112,7 +112,7 @@ down ip rule del {{ rule_str }}
 
 {% if item.extra_addresses is defined %}
 {% for address in item.extra_addresses %}
-up ip addr add {{ address["ip"] }}/{{ address["netmask"] }} dev {{ item.device }}
-down ip addr del {{ address["ip"] }}/{{ address["netmask"] }} dev {{ item.device }}
+up ip addr add {{ address["addr"] }} dev {{ item.device }}
+down ip addr del {{ address["addr"] }} dev {{ item.device }}
 {% endfor %}
 {% endif %}

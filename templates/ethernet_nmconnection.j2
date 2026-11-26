@@ -37,7 +37,7 @@ address1={{ (item.address ~'/'~ item.netmask) | ipaddr('host/prefix') }}
 {%   endif %}
 {%   if item.extra_addresses is defined %}
 {%   for address in item.extra_addresses %}
-address{{ loop.index + 1 }}={{ (address["ip"] ~'/'~ address["netmask"] | ipaddr('host/prefix') }}
+address{{ loop.index + 1 }}={{ address["addr"] | ipaddr('host/prefix') }}
 {%   endfor %}
 {%   endif %}
 {%   if item.gateway is defined and item.gateway | length %}
